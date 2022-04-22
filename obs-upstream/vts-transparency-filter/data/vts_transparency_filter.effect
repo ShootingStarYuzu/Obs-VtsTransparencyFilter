@@ -1,0 +1,46 @@
+uniform float4x4 ViewProj;
+uniform texture2d image;
+
+uniform float4 background_color;
+
+sampler_state textureSampler {
+	Filter    = Linear;
+	AddressU  = Clamp;
+	AddressV  = Clamp;
+};
+
+struct VertData {
+	float4 pos : POSITION;
+	float2 uv  : TEXCOORD0;
+};
+
+VertData VSDefault(VertData v_in)
+{
+	VertData vert_out;
+	vert_out.pos = mul(float4(v_in.pos.xyz, 1.0), ViewProj);
+	vert_out.uv  = v_in.uv;
+	return vert_out;
+}
+
+float4 PSTransparencyRGBA(VertData v_in) : TARGET
+{
+	float4 rgba = image.Sample(textureSampler, v_in.uv);
+
+	// Compute how much of the background color to "remove" from the rendered result.
+	// This formula has been derived loosely from https://en.wikipedia.org/wiki/Alpha_compositing.
+	float strength = clamp(1.0 - rgba.a, 0.01, 1.0) * clamp(rgba.a, 0.05, 1.0);
+
+	// Remove the partial background color and rescale all colors according to the alpha value.
+	rgba.rgb = (rgba.rgb - strength * background_color.rgb) / clamp(rgba.a, 0.1, 1.0);
+
+	return rgba;
+}
+
+technique Draw
+{
+	pass
+	{
+		vertex_shader = VSDefault(v_in);
+		pixel_shader  = PSTransparencyRGBA(v_in);
+	}
+}
