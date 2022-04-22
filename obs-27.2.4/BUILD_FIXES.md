@@ -47,3 +47,11 @@ if exist Qt_5.15.2.7z (curl -kLO https://cdn-fastly.obsproject.com/downloads/Qt_
 7z x Qt_5.15.2.7z -oQt
 xcopy /E Qt\ C:\QtDep\
 ```
+
+Replace the contents of `CI\before-deploy-win.cmd` with the following content:
+
+```cmd
+robocopy .\build32\rundir\Release .\build\ /E /XF .gitignore
+robocopy .\build64\rundir\Release .\build\ /E /XC /XN /XO /XF .gitignore
+7z a build.zip .\build\*
+```
